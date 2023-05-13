@@ -6,7 +6,7 @@ const userValidator = require("../middleware/userValidator");
 const userValidation = require("../validations/userValidation");
 
 router.post(
-  "/",
+  "/register",
   userValidator.postValidation(userValidation.userPostSchema),
   userController.createUsersAccount
 );

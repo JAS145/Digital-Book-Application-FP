@@ -51,7 +51,7 @@ const logInAccount = (req, res) => {
     }
     if (!result[0] || !bcrypt.compare(password, result[0].password)) {
       console.log(result);
-      return response(400, error, error, res);
+      return response(400, error, "Email or password is incorrect.", res);
       // res.status(401).json({ error: "Invalid username or password" });
     }
     const user = result[0];

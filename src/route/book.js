@@ -9,7 +9,13 @@ const role = require("../middleware/roleAuthentication");
 
 //PUBLISHER
 //TO PUBLISH BOOKS
-router.post("/", auth, role.publisherAuth, multer, bookController.publishBook);
+router.post(
+  "/publish",
+  auth,
+  role.publisherAuth,
+  multer,
+  bookController.publishBook
+);
 
 //TO DELETE BOOKS
 router.delete(

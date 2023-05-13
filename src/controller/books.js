@@ -148,7 +148,7 @@ const publishBook = (req, res) => {
         response(400, error.name, error.message, res);
         return;
       } else {
-        response(200, result, "Here is your book.", res);
+        response(200, result, "The upload is successful.", res);
         return;
       }
     }
