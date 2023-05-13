@@ -16,11 +16,15 @@ router.post(
   userValidator.postLogInValidation(userValidation.logInUser),
   userController.logInAccount
 );
-router.delete(
+router.delete("/", auth, userController.deleteUsersAccount);
+
+router.get("/profile", auth, userController.getUsersAccount);
+router.get("/profile/detail", auth, userController.getUsersAccountDetails);
+router.put(
   "/:id",
   auth,
-  userValidator.deleteValidation(userValidation.userDeleteSchema),
-  userController.deleteUsersAccount
+  userValidator.putValidation(userValidation.userPutSchema),
+  userController.updateUsersAccount
 );
 
 module.exports = router;

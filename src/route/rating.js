@@ -4,22 +4,28 @@ const ratingController = require("../controller/ratings");
 const auth = require("../middleware/authentication");
 const ratingValidator = require("../middleware/ratingValidator");
 const ratingValidation = require("../validations/ratingValidation");
+const ratingLimit = require("../middleware/apiLimit");
+const role = require("../middleware/roleAuthentication");
 
 router.post(
   "/",
+  ratingLimit.ratingLimiter,
   auth,
-  ratingValidator.postValidation(ratingValidation.publishRatingSchema),
-  ratingController.publishRating
+  role.readerAuth,
+  ratingValidator.postValidation(ratingValidation.createRatingSchema),
+  ratingController.addRatings
 );
-// router.delete(
-//   "/:id",
-//   auth,
-//   ratingValidator.deleteValidation(ratingValidation.deleteRatingSchema),
-//   ratingController.deleteRating
-// );
+router.delete(
+  "/:id",
+  auth,
+  role.readerAuth,
+  ratingValidator.deleteValidation(ratingValidation.deleteRatingSchema),
+  ratingController.deleteRatings
+);
 router.put(
   "/:id",
   auth,
+  role.readerAuth,
   ratingValidator.putValidation(ratingValidation.updateRatingSchema),
   ratingController.updateRatings
 );
@@ -29,6 +35,13 @@ router.get(
   ratingValidator.getValidation(ratingValidation.viewAllRatingSchema),
   ratingController.viewAllRatings
 );
+//RATING FILTER
+router.get(
+  "/filter",
+  auth,
+  ratingValidator.getRatingFilter(ratingValidation.viewRatingFilterSchema),
+  ratingController.viewRatingsFilter
+);
 router.get(
   "/:id",
   auth,
@@ -36,15 +49,6 @@ router.get(
     ratingValidation.viewSpecificRatingSchema
   ),
   ratingController.viewSpecificRatings
-);
-
-router.get(
-  "/",
-  auth,
-  ratingValidator.ratingCategoryValidation(
-    ratingValidation.ratingDisplayCategorySchema
-  ),
-  ratingController.ratingDisplayCategory
 );
 
 module.exports = router;

@@ -3,22 +3,20 @@ const postValidation = (schema) => async (req, res, next) => {
     await schema.validate(req.body, { stripUnknown: false, strict: true });
     return next();
   } catch (error) {
+    res.status(401).send({ errorName: error.name, errorMessage: error });
+  }
+};
+
+const deleteValidation = (schema) => async (req, res, next) => {
+  try {
+    await schema.validate(req.params.id);
+    return next();
+  } catch (error) {
     res
       .status(401)
       .send({ errorName: error.name, errorMessage: error.message });
   }
 };
-
-// const deleteValidation = (schema) => async (req, res, next) => {
-//   try {
-//     await schema.validate(req.params.id);
-//     return next();
-//   } catch (error) {
-//     res
-//       .status(401)
-//       .send({ errorName: error.name, errorMessage: error.message });
-//   }
-// };
 
 const putValidation = (schema) => async (req, res, next) => {
   const productId = parseInt(req.params.id, 10); // convert id string to number
@@ -41,18 +39,24 @@ const putValidation = (schema) => async (req, res, next) => {
 
 const getValidation = (schema) => async (req, res, next) => {
   try {
-    await schema.validate(req.body, { stripUnknown: false, strict: true });
+    await schema.validate(req.query, { stripUnknown: false });
     return next();
   } catch (error) {
-    res
-      .status(401)
-      .send({ errorName: error.name, errorMessage: error.message });
+    res.status(401).send({ errorName: error.name, errorMessage: error });
+  }
+};
+const getRatingFilter = (schema) => async (req, res, next) => {
+  try {
+    await schema.validate(req.query, { stripUnknown: false });
+    return next();
+  } catch (error) {
+    res.status(401).send({ errorName: error.name, errorMessage: error });
   }
 };
 
 const getSpecificValidation = (schema) => async (req, res, next) => {
   try {
-    await schema.validate(req.params);
+    await schema.validate(req.params.id);
     return next();
   } catch (error) {
     res
@@ -63,8 +67,9 @@ const getSpecificValidation = (schema) => async (req, res, next) => {
 
 module.exports = {
   getValidation,
+  getRatingFilter,
   postValidation,
   getSpecificValidation,
   putValidation,
-  // deleteValidation,
+  deleteValidation,
 };

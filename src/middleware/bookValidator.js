@@ -1,14 +1,3 @@
-const postValidation = (schema) => async (req, res, next) => {
-  try {
-    await schema.validate(req.body, { stripUnknown: false, strict: true });
-    return next();
-  } catch (error) {
-    res
-      .status(401)
-      .send({ errorName: error.name, errorMessage: error.message });
-  }
-};
-
 const deleteValidation = (schema) => async (req, res, next) => {
   try {
     await schema.validate(req.params.id);
@@ -21,32 +10,11 @@ const deleteValidation = (schema) => async (req, res, next) => {
 };
 
 const putValidation = (schema) => async (req, res, next) => {
-  const productId = parseInt(req.params.id, 10); // convert id string to number
-  if (isNaN(productId)) {
-    res.status(400).json({
-      errorName: "ValidationError",
-      errorMessage: "id must be a `number` type",
-    });
-  } else {
-    try {
-      await schema.validate(req.body, { strict: true });
-      return next();
-    } catch (error) {
-      res
-        .status(401)
-        .send({ errorName: error.name, errorMessage: error.message });
-    }
-  }
-};
-
-const getValidation = (schema) => async (req, res, next) => {
   try {
-    await schema.validate(req.body, { stripUnknown: false, strict: true });
+    await schema.validate(req.params.id);
     return next();
   } catch (error) {
-    res
-      .status(401)
-      .send({ errorName: error.name, errorMessage: error.message });
+    res.status(401).send({ errorName: error.name, errorMessage: error });
   }
 };
 
@@ -60,10 +28,9 @@ const getSpecificValidation = (schema) => async (req, res, next) => {
       .send({ errorName: error.name, errorMessage: error.message });
   }
 };
-
-const searchBookValidation = (schema) => async (req, res, next) => {
+const getBookImage = (schema) => async (req, res, next) => {
   try {
-    await schema.validate(req.query, { abortEarly: false });
+    await schema.validate(req.params.id);
     return next();
   } catch (error) {
     res
@@ -72,11 +39,41 @@ const searchBookValidation = (schema) => async (req, res, next) => {
   }
 };
 
+const getReadBook = (schema) => async (req, res, next) => {
+  try {
+    await schema.validate(req.params.id);
+    return next();
+  } catch (error) {
+    res
+      .status(401)
+      .send({ errorName: error.name, errorMessage: error.message });
+  }
+};
+
+const postBookAccess = (schema) => async (req, res, next) => {
+  try {
+    await schema.validate(req.body, { stripUnknown: false, strict: true });
+    return next();
+  } catch (error) {
+    res.status(401).send({ errorName: error.name, errorMessage: error });
+  }
+};
+
+const bookSearchValidation = (schema) => async (req, res, next) => {
+  try {
+    await schema.validate(req.query, { abortEarly: false });
+    return next();
+  } catch (error) {
+    res.status(401).send({ errorName: error.name, errorMessage: error });
+  }
+};
+
 module.exports = {
-  getValidation,
-  postValidation,
   getSpecificValidation,
+  getBookImage,
+  getReadBook,
+  postBookAccess,
   putValidation,
   deleteValidation,
-  searchBookValidation,
+  bookSearchValidation,
 };

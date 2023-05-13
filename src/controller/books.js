@@ -1,15 +1,24 @@
 const response = require("../utils/response");
+const bookModel = require("../models/bookModel");
+const multer = require("../middleware/multer");
 const db = require("../confiq/connection");
+const path = require("path");
+const fs = require("fs");
 
 //PUBLISHER
 //SHOW ALL BOOKS
 
 const viewAllBook = (req, res) => {
-  const { publisher_id } = req.body;
-  const sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id where publisher_id = ? group by books.id`;
-  db.query(sql, [publisher_id], (error, result) => {
+  // const { publisher_id } = req.query;
+  const userEmail = req.user.email;
+  const sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books 
+  left join ratings on ratings.book_id = books.id 
+  left join users on books.user_id = users.id 
+  where users.email = ? group by books.id`;
+
+  db.query(sql, [userEmail], (error, result) => {
     if (error) {
-      response(400, error.name, error.message, res);
+      response(400, error.name, error, res);
     }
     if (result[0] == undefined) {
       response(404, "Result is undefined", "Your book is not found.", res);
@@ -20,28 +29,87 @@ const viewAllBook = (req, res) => {
   });
 };
 
-//SHOW BOOKS BY ID
 const viewSpecificBook = (req, res) => {
   const { id } = req.params;
-  const sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id where id = ? group by books.id`;
+
+  bookModel.viewSpecificBook(id, (error, result) => {
+    if (error) {
+      return response(400, error.name, error, res);
+    }
+
+    if (!result) {
+      return response(
+        404,
+        "Result is undefined",
+        "Your book is not found.",
+        res
+      );
+    }
+
+    response(200, result, "Here is your book.", res);
+  });
+};
+
+//SHOW BOOK IMAGE
+const viewBookImage = (req, res) => {
+  const id = req.params.id;
+
+  const sql = `SELECT image_url FROM books WHERE id = ?`;
 
   db.query(sql, [id], (error, result) => {
     if (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error getting book image" });
+      return;
+    }
+    const imagePath = result[0].image_url;
+    const absolutePath = path.resolve(__dirname, "..", "..", imagePath);
+    res.sendFile(absolutePath);
+  });
+};
+
+//READ BOOK
+const readBook = (req, res) => {
+  const bookId = req.params.bookId;
+  // const userEmail = req.user.email;
+  const sql = "SELECT file_url FROM books WHERE id = ?";
+  db.query(sql, [bookId], (err, result) => {
+    if (err) {
+      res.status(500).json({ err });
+      return;
+    }
+    if (result.length === 0) {
+      res.status(403).json({ error: "You have not paid for this book" });
+      return;
+    }
+    const bookPath = result[0].file_url;
+    // Stream the book file to the client
+    const stream = fs.createReadStream(bookPath);
+    stream.pipe(res);
+  });
+};
+
+//BOOK ACCESS
+const bookAccess = (req, res) => {
+  const { book_id, user_id, payment_id } = req.body;
+  const sql =
+    "INSERT INTO book_access (book_id, user_id, payment_id) VALUES (?, ?, ?)";
+
+  db.query(sql, [book_id, user_id, payment_id], (error, result) => {
+    if (error) {
       response(400, error.name, error.message, res);
       return;
-    }
-    if (result[0] == undefined) {
-      response(404, "Result is undefined", "Your book is not found.", res);
+    } else {
+      response(200, result, "The data sent successfully.", res);
       return;
     }
-    response(200, result, "Here is your book.", res);
-    return;
   });
 };
 
 //UPLOAD BOOK
 const publishBook = (req, res) => {
   const {
+    user_id,
     title,
     author,
     description,
@@ -50,18 +118,18 @@ const publishBook = (req, res) => {
     publication_date,
     category,
     price,
-    formats,
     languages,
     keywords,
   } = req.body;
-  const image_url = req.files.image;
-  const file_url = req.files.book;
+  const image_url = req.files.image[0].path;
+  const file_url = req.files.book[0].path;
   const sql =
-    "INSERT INTO books (title, author, description, publisher, isbn, publication_date, category, price, formats, languages, keywords, image_url, file_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    "INSERT INTO books (user_id, title, author, description, publisher, isbn, publication_date, category, price, languages, keywords, image_url, file_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
 
   db.query(
     sql,
     [
+      user_id,
       title,
       author,
       description,
@@ -70,13 +138,12 @@ const publishBook = (req, res) => {
       publication_date,
       category,
       price,
-      formats,
       languages,
       keywords,
       image_url,
       file_url,
     ],
-    (error, result, fields) => {
+    (error, result) => {
       if (error) {
         response(400, error.name, error.message, res);
         return;
@@ -100,13 +167,13 @@ const updateBook = (req, res) => {
     publication_date,
     category,
     price,
-    formats,
     languages,
     keywords,
   } = req.body;
   const image_url = req.files.image;
   const file_url = req.files.book;
-  const sql = `UPDATE books SET title = ?, author = ?, description = ?, publisher = ? isbn = ? publication_date = ?, category = ?, price = ?, format = ?, languages = ?, keywords = ?, image_url = ? file_url = ?`;
+  const sql = `UPDATE books SET title = ?, author = ?, description = ?, publisher = ?, isbn = ?, publication_date = ?, category = ?, price = ?, languages = ?, keywords = ?, image_url = ?, file_url = ?`;
+
   db.query(
     sql,
     [
@@ -118,7 +185,6 @@ const updateBook = (req, res) => {
       publication_date,
       category,
       price,
-      formats,
       languages,
       keywords,
       image_url,
@@ -127,7 +193,7 @@ const updateBook = (req, res) => {
     ],
     (error, result) => {
       if (error) {
-        response(400, error.name, error.message, res);
+        response(400, error.name, error, res);
         return;
       }
       if (result.affectedRows == 0) {
@@ -151,7 +217,9 @@ const updateBook = (req, res) => {
 //HAPUS BOOK
 const deleteBook = (req, res) => {
   const { id } = req.params;
+  // const userEmail = req.user.email;
   const sql = `delete from books where id = ?`;
+
   db.query(sql, [id], (error, result) => {
     if (error) {
       response(400, error.name, error.message, res);
@@ -172,27 +240,28 @@ const deleteBook = (req, res) => {
 //USER
 const bookSearch = (req, res) => {
   const { title, keywords, category } = req.query;
-  const sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id where 1=1 limit 10 group by books.id`; //PLEASE CHECK THIS LATER
+  let sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id where 1=1`; //PLEASE CHECK THIS LATER
   const params = [];
 
   if (title) {
-    sql += "AND title like ?";
+    sql += " AND title like ?";
     params.push("%" + title + "%");
   }
   if (keywords) {
-    sql += "AND keywords like ?";
+    sql += " AND keywords like ?";
     params.push("%" + keywords + "%");
   }
   if (category) {
-    sql += "AND category like ?";
+    sql += " AND category like ?";
     params.push("%" + category + "%");
   }
   if (!title && !keywords && !category) {
-    sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id limit 10 group by books.id`;
+    sql = `select books. *, AVG(ratings.score) as average_rating, ratings.comment from books left join ratings on ratings.book_id = books.id`;
   }
+  sql += ` group by books.id limit 10`;
   db.query(sql, params, (error, result) => {
     if (error) {
-      response(400, error.name, error.message, res);
+      response(400, error.name, error, res);
     }
     if (result[0] == undefined) {
       response(404, `Result is undefined", "The books are not found`, res);
@@ -206,7 +275,11 @@ const bookSearch = (req, res) => {
 module.exports = {
   viewAllBook,
   viewSpecificBook,
+  viewBookImage,
+  readBook,
+  bookAccess,
   publishBook,
+  multer,
   updateBook,
   deleteBook,
   bookSearch,

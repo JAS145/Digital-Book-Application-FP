@@ -3,7 +3,7 @@ const db = require("../confiq/connection");
 
 //SHOW ALL RATINGS OF THE BOOK
 const viewAllRatings = (req, res) => {
-  const { book_id } = req.body;
+  const { book_id } = req.query;
   const sql = `select * from ratings where book_id = ?`;
   db.query(sql, [book_id], (error, result) => {
     if (error) {
@@ -18,12 +18,29 @@ const viewAllRatings = (req, res) => {
   });
 };
 
-//SHOW RATINGS BY ID
-const viewSpecificRatings = (req, res) => {
-  const { book_id, score } = req.body;
+// SHOW RATINGS BY ID
+const viewRatingsFilter = (req, res) => {
+  const { book_id, score } = req.query;
   const sql = `select * from ratings where book_id = ? and score =? `;
 
   db.query(sql, [book_id, score], (error, result) => {
+    if (error) {
+      response(400, error.name, error.message, res);
+      return;
+    }
+    if (result[0] == undefined) {
+      response(404, "Result is undefined", "The ratings are not found.", res);
+      return;
+    }
+    response(200, result, "Here are the book's ratings.", res);
+    return;
+  });
+};
+const viewSpecificRatings = (req, res) => {
+  const { id } = req.params;
+  const sql = `select * from ratings where id =? `;
+
+  db.query(sql, [id], (error, result) => {
     if (error) {
       response(400, error.name, error.message, res);
       return;
@@ -45,7 +62,7 @@ const addRatings = (req, res) => {
 
   db.query(sql, [book_id, user_id, score, comment], (error, result) => {
     if (error) {
-      response(400, error.name, error.message, res);
+      response(400, error.name, error, res);
       return;
     }
     if (result.affectedRows) {
@@ -90,30 +107,31 @@ const updateRatings = (req, res) => {
 };
 
 // //HAPUS RATINGS LIST
-// const deleteRatings = (req, res) => {
-//   const { id } = req.params;
-//   const sql = `delete from ratings where id = ?`;
-//   db.query(sql, [id], (error, result) => {
-//     if (error) {
-//       response(400, error.name, error.message, res);
-//       return;
-//     }
-//     if (result.affectedRows) {
-//       const data = {
-//         isDeleted: result.affectedRows,
-//       };
-//       response(200, data, `Your ratings with ID = ${id} has been deleted`, res);
-//       return;
-//     } else {
-//       response(404, "error", `Your ratings with ID = ${id} is not found`, res);
-//     }
-//   });
-// };
+const deleteRatings = (req, res) => {
+  const { id } = req.params;
+  const sql = `delete from ratings where id = ?`;
+  db.query(sql, [id], (error, result) => {
+    if (error) {
+      response(400, error.name, error.message, res);
+      return;
+    }
+    if (result.affectedRows) {
+      const data = {
+        isDeleted: result.affectedRows,
+      };
+      response(200, data, `Your ratings with ID = ${id} has been deleted`, res);
+      return;
+    } else {
+      response(404, "error", `Your ratings with ID = ${id} is not found`, res);
+    }
+  });
+};
 
 module.exports = {
   viewAllRatings,
   viewSpecificRatings,
+  viewRatingsFilter,
   addRatings,
   updateRatings,
-  // deleteRatings,
+  deleteRatings,
 };
