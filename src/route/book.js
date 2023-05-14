@@ -50,7 +50,6 @@ router.get(
 router.get(
   "/:id",
   auth,
-  role.publisherAuth,
   bookValidator.getSpecificValidation(bookValidation.viewSpecificBookSchema),
   bookController.viewSpecificBook
 );
