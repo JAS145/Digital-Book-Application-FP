@@ -11,7 +11,7 @@ const fs = require("fs");
 const viewAllBook = (req, res) => {
   // const { publisher_id } = req.query;
   const userEmail = req.user.email;
-  const sql = `select books.title, books.author, AVG(ratings.score) as average_rating, ratings.comment from books 
+  const sql = `select books.id, books.title, books.price, AVG(ratings.score) as average_rating, ratings.comment from books 
   left join ratings on ratings.book_id = books.id 
   left join users on books.user_id = users.id 
   where users.email = ? group by books.id`;
@@ -240,7 +240,7 @@ const deleteBook = (req, res) => {
 //USER
 const bookSearch = (req, res) => {
   const { title, keywords, category } = req.query;
-  let sql = `select books.title, books.author, AVG(ratings.score) as average_rating, from books left join ratings on ratings.book_id = books.id where 1=1`; //PLEASE CHECK THIS LATER
+  let sql = `select books.id, books.title, books.author, AVG(ratings.score) as average_rating from books left join ratings on ratings.book_id = books.id where 1=1`; //PLEASE CHECK THIS LATER
   const params = [];
 
   if (title) {
@@ -261,11 +261,16 @@ const bookSearch = (req, res) => {
   sql += ` group by books.id limit 10`;
   db.query(sql, params, (error, result) => {
     if (error) {
-      response(400, error.name, error, res);
+      return response(400, error.name, error, res);
     }
+
     if (result[0] == undefined) {
-      response(404, `Result is undefined", "The books are not found`, res);
-      return;
+      return response(
+        404,
+        "Result is undefined",
+        "The books are not found",
+        res
+      );
     }
     response(200, result, "Here are the books.", res);
     return;

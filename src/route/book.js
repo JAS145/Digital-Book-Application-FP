@@ -6,6 +6,7 @@ const bookValidator = require("../middleware/bookValidator");
 const bookValidation = require("../validations/bookValidation");
 const multer = require("../middleware/multer");
 const role = require("../middleware/roleAuthentication");
+const access = require("../middleware/checkPayment");
 
 //PUBLISHER
 //TO PUBLISH BOOKS
@@ -66,6 +67,7 @@ router.get(
   "/:bookId/read",
   auth,
   role.readerAuth,
+  access,
   bookValidator.getReadBook(bookValidation.readBookSchema),
   bookController.readBook
 );
